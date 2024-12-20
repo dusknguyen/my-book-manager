@@ -88,7 +88,6 @@ def get_books(filter_categories=None, status_filter=None):
     conn.close()
     return books
 
-
 # Mở sách
 def open_book(file_path):
     try:
@@ -100,6 +99,14 @@ def open_book(file_path):
             messagebox.showerror("Lỗi", "Không hỗ trợ mở file trên hệ điều hành này.")
     except Exception as e:
         messagebox.showerror("Lỗi", f"Không thể mở file: {e}")
+
+# Cập nhật trạng thái sách
+def update_status(book_id, new_status):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE books SET status = ? WHERE id = ?", (new_status, book_id))
+    conn.commit()
+    conn.close()
 
 # Thêm thể loại
 def add_category(category_name):
@@ -167,11 +174,10 @@ def main():
         for book in books:
             tree.insert("", "end", values=(book[1], book[2], book[3], book[5] or "Không có", book[4]), iid=book[0])
 
-
     def open_selected_book():
         selected_books = tree.selection()
         for item in selected_books:
-            book_path = tree.item(item, "values")[3]
+            book_path = tree.item(item, "values")[4]
             open_book(book_path)
 
     def create_category():
@@ -194,6 +200,12 @@ def main():
         for book_id in selected_books:
             assign_categories_to_book(book_id, selected_categories)
 
+    def mark_status(new_status):
+        selected_books = tree.selection()
+        for item in selected_books:
+            update_status(item, new_status)
+        update_book_list()
+
     category_entry = Entry(root)
     category_entry.pack()
     Button(root, text="Thêm thể loại", command=create_category).pack()
@@ -205,10 +217,13 @@ def main():
     tree.heading("file_type", text="Loại file")
     tree.heading("status", text="Trạng thái")
     tree.heading("categories", text="Thể loại")
+    tree.heading("path", text="Đường dẫn")
     tree.pack(fill="both", expand=True)
 
-
     Button(root, text="Lọc sách", command=update_book_list).pack()
+    Button(root, text="Đánh dấu đã đọc", command=lambda: mark_status("Đã đọc")).pack()
+    Button(root, text="Đánh dấu đang đọc", command=lambda: mark_status("Đang đọc")).pack()
+    Button(root, text="Đánh dấu chưa đọc", command=lambda: mark_status("Chưa đọc")).pack()
     Button(root, text="Mở sách", command=open_selected_book).pack()
 
     update_category_list()
